@@ -8,46 +8,52 @@ import spex_common.modules.omeroweb as omero_web
 import spex_common.modules.omero_blitz as omero_blitz
 
 
+def log_prefix(service):
+    now = datetime.datetime.now()
+    timestamp = now.strftime("%H:%M:%S")
+    return f'{timestamp} [{service}]:\t'
+
+
 def refresher(service, get, get_key, host, port):
     try:
-        print(f'connect to memcached for {service}')
+        print(f'{log_prefix(service)}connect to memcached for {service}')
 
         mem = MemcachedStats(host, port)
         key_prefix = get_key('')
         keys = list(filter(lambda item: item.startswith(key_prefix), set(mem.keys())))
 
-        print(f'found keys {service}: {len(keys)}')
+        print(f'{log_prefix(service)}found keys: {len(keys)}')
 
         for key in keys:
             value = cache_instance().get(key)
-            now = datetime.datetime.now()
-            timestamp = now.strftime("%H:%M:%S")
 
             if value is None:
-                print(f'{timestamp}: Session {service} {key} deleted before')
+                print(f'{log_prefix(service)}Session {service} {key} deleted before')
                 continue
 
-            if value.active_until is not None and value.active_until < datetime.datetime.now():
+            active_until = getattr(value, 'active_until')
+
+            if active_until is not None and active_until < datetime.datetime.now():
                 cache_instance().delete(key)
-                print(f'{timestamp}: Session {service} {key} deleted')
+                print(f'{log_prefix(service)}Session {service} {key} deleted')
                 continue
 
             _, login = key.split(key_prefix)
             session = get(login)
             if session is None:
                 cache_instance().delete(key)
-                print(f'{timestamp}: Session {service} {key} deleted')
+                print(f'{log_prefix(service)}Session {service} {key} deleted')
                 continue
 
-            print(f'{timestamp}: Session {service} {key} refreshed valid until {value.active_until}')
+            print(f'{log_prefix(service)}Session {service} {key} refreshed valid until {value.active_until}')
     except Exception as error:
-        print('Error:', error)
+        print(f'{log_prefix(service)}Error:', error)
     pass
 
 
 class OmeroWebRefresherWorker(Thread):
-    def __init__(self, host, port):
-        super().__init__()
+    def __init__(self, host, port, daemon=True):
+        super().__init__(name=self.__class__.__name__, daemon=daemon)
         self.__host = host
         self.__port = port
 
@@ -60,12 +66,13 @@ class OmeroWebRefresherWorker(Thread):
             self.__host,
             self.__port
         )
+        print(f'{log_prefix(self.__class__.__name__)}start checking\n')
         every(60, checker)
 
 
 class OmeroBlitzRefresherWorker(Thread):
-    def __init__(self, host, port):
-        super().__init__()
+    def __init__(self, host, port, daemon=True):
+        super().__init__(name=self.__class__.__name__, daemon=daemon)
         self.__host = host
         self.__port = port
 
@@ -78,4 +85,5 @@ class OmeroBlitzRefresherWorker(Thread):
             self.__host,
             self.__port
         )
+        print(f'{log_prefix(self.__class__.__name__)}start checking\n')
         every(60, checker)
