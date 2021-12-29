@@ -54,11 +54,9 @@ if __name__ == '__main__':
     # init session refresher thread
     host, port = getenv('MEMCACHED_HOST', 'localhost:11211').split(':')
     worker = OmeroWebRefresherWorker(host, port)
-    worker.daemon = True
     worker.start()
 
     worker = OmeroBlitzRefresherWorker(host, port)
-    worker.daemon = True
     worker.start()
 
     application.run()
