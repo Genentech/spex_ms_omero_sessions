@@ -1,4 +1,5 @@
 FROM python:3.9.2
+RUN pip install --upgrade pip
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE = 1 \
