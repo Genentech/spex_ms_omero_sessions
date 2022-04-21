@@ -11,7 +11,7 @@ COPY ./common /app/common
 
 WORKDIR /app/services/app
 
-RUN pip install pipenv && pipenv install --system --deploy --ignore-pipfile
+RUN pip install pipenv && pipenv install --system --deploy --ignore-pipfile && pip install flask-restx==0.5
 
 EXPOSE 8080
 CMD ["python", "app.py"]
