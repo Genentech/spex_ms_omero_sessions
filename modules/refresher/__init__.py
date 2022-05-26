@@ -6,19 +6,25 @@ from spex_common.modules.redis import redis_instance
 from spex_common.modules.logging import get_logger
 import spex_common.modules.omeroweb as omero_web
 import spex_common.modules.omero_blitz as omero_blitz
+from spex_common.models.Serializable import Serializable
 
 
-def refresher(get, get_key, logger):
+def refresher(
+        get,
+        get_key,
+        logger,
+):
     try:
         logger.info(f'connect to redis')
 
-        key_prefix = get_key('')
-        keys = list(filter(lambda item: item.decode("utf-8").startswith(key_prefix), set(redis_instance().keys())))
+        key_prefix = get_key("")
+        keys = redis_instance().keys(f'{key_prefix}*')
 
         logger.info(f'found keys: {len(keys)}')
 
         for key in keys:
             value = redis_instance().get(key)
+            value = Serializable.deserialize(value)
 
             if value is None:
                 logger.info(f'Session {key} deleted before')
@@ -34,7 +40,7 @@ def refresher(get, get_key, logger):
             _, login = key.decode("utf-8").split(key_prefix)
             session = get(login)
             if session is None:
-                redis_instance().delete(key)
+                redis_instance().delete(key.decode("utf-8"))
                 logger.info(f'Session {key} deleted')
                 continue
 
@@ -54,7 +60,7 @@ class OmeroWebRefresherWorker(Thread):
             refresher,
             omero_web.get,
             omero_web.get_key,
-            self.__logger
+            self.__logger,
         )
         self.__logger.info(f'start checking')
         every(60, checker)
@@ -70,7 +76,7 @@ class OmeroBlitzRefresherWorker(Thread):
             refresher,
             omero_blitz.get,
             omero_blitz.get_key,
-            self.__logger
+            self.__logger,
         )
         self.__logger.info(f'start checking')
         every(60, checker)
