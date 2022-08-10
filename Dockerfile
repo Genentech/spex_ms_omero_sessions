@@ -12,6 +12,6 @@ COPY ./common /app/common
 
 WORKDIR /app/services/app
 
-RUN pipenv install --system --deploy --ignore-pipfile && pip install flask-restx==0.5.1
+RUN pipenv install --system --deploy --ignore-pipfile && pip install flask-restx==0.5.1 werkzeug==2.1.2
 
 CMD ["python", "app.py"]
