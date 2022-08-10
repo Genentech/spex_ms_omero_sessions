@@ -16,6 +16,7 @@ requests = "==2.26.0"
 flask-cors = "*"
 flask-restx = "==0.5.1"
 flask = "==2.0.3"
+werkzeug = "==2.1.2"
 markupsafe = "==2.0.1"
 spex-common = {editable = true, path = "./../../common"}
 
